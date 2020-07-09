@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import random
 tasks = pd.read_csv('tasks.csv')
 
 class Task(object):
@@ -23,6 +24,7 @@ class Task(object):
         self.to_add_mean_C = None
         self.added_value_to_C = None
         self.history_click_results =[]
+        self.num_of_choices = 100
 
     def load_task(self, row):
         # load from df to properties of Task
@@ -50,18 +52,36 @@ class Task(object):
             exp_valueB = self.result_B1 * self.p_B1 + self.result_B2 * (1-self.p_B1)
             self.added_value_to_C = np.mean([exp_valueA, exp_valueB])
 
-    def click_A(self):
-        x=4
+    def get_buttons_results(self):
+        sample_numA = random.random(0, 1)
+        if sample_numA < self.p_A1:
+            result_A = self.result_A1
+        else:
+            result_A = self.result_A2
 
+        sample_numB = random.random(0, 1)
+        if sample_numB < self.p_B1:
+            result_B = self.result_B1
+        else:
+            result_B = self.result_B2
+
+        result_C = None
+        if self.num_buttons == 3:
+            sample_numC = random.random(0,1)
+            if sample_numC < self.p_C1:
+                result_C = self.result_C1
+            else:
+                result_C = self.result_C2
 
         #history_click_results.append(-1)
+        return ( result_A , result_B, result_C )
 
-    def click_B(self):
-        x=4
 
-    def click_C(self):
-        x=5
-
+    def run_task(self, choice_func):
+        for trail in range(0, self.num_of_choices):
+            choice = choice_func( self.num_buttons )
+            (resA, resB, resC) = self.get_buttons_results()
+            print("choice: ", choice, "results:", (resA, resB, resC))
 
 Tasks = []
 
@@ -69,5 +89,18 @@ for index, row in tasks.iterrows():
     current_task = Task()
     current_task.load_task(row)
     Tasks.append(current_task)
+
+#num of clicks per task
+T = 100
+
+def choice_rule( num ):
+    return 'A'
+
+
+
+for task in Tasks:
+    # TODO create decision rule
+    task.run_task( choice_rule )
+
 
 print("hello")
