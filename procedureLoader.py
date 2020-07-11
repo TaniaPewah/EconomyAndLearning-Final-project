@@ -131,8 +131,10 @@ class Task(object):
         # id of the trial, self.percentage_sum
 
         df = pd.DataFrame([self.id] + self.a_block_percentage + self.b_block_percentage + self.c_block_percentage)
+        df = df.transpose()
         print(df)
-        df.to_csv("output.csv", mode ='a', index=False)
+        df.to_csv("output.csv", mode ='a', index=False, header=False)
+
 
 
 Tasks = []
