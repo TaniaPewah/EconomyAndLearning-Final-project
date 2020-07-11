@@ -28,6 +28,9 @@ class Task(object):
         self.choices = []
         self.num_blocks = 5
         self.percentage_sum = []
+        self.a_block_percentage = []
+        self.b_block_percentage = []
+        self.c_block_percentage = []
 
     def load_task(self, row):
         # load from df to properties of Task
@@ -114,14 +117,20 @@ class Task(object):
                     num_of_B = count
                 if choices[indx] == 'C':
                     num_of_C = count
-            print(num_of_A, num_of_B, num_of_C)
-            self.percentage_sum.append(( num_of_A / block_size, num_of_B/ block_size, num_of_C/ block_size))
 
-        print( 'percentage_sum ', self.percentage_sum)
+            self.a_block_percentage.append(num_of_A / block_size)
+            self.b_block_percentage.append(num_of_B / block_size)
+            self.c_block_percentage.append(num_of_C / block_size)
+
+        print('A', self.a_block_percentage)
+        print('B', self.b_block_percentage)
+        print('C', self.c_block_percentage)
+
 
     def save_csv(self ):
         # id of the trial, self.percentage_sum
-        df = pd.DataFrame(self.percentage_sum)
+
+        df = pd.DataFrame([self.id] + self.a_block_percentage + self.b_block_percentage + self.c_block_percentage)
         print(df)
         df.to_csv("output.csv", mode ='a', index=False)
 
