@@ -25,6 +25,8 @@ class Task(object):
         self.added_value_to_C = None
         self.history_click_results =[]
         self.num_of_choices = 100
+        self.choices = []
+        self.num_blocks = 5
 
     def load_task(self, row):
         # load from df to properties of Task
@@ -54,7 +56,7 @@ class Task(object):
 
     def get_buttons_results(self):
         sample_numA = random.random()
-        print(sample_numA)
+
         if sample_numA < self.p_A1:
             result_A = self.result_A1
         else:
@@ -69,7 +71,7 @@ class Task(object):
         result_C = None
         if self.num_buttons == 3:
             sample_numC = random.random()
-            if sample_numC < self.p_C1:
+            if sample_numC < float(self.p_C1):
                 result_C = self.result_C1
             else:
                 result_C = self.result_C2
@@ -79,10 +81,23 @@ class Task(object):
 
 
     def run_task(self, choice_func):
+
+        print("~~~ Task number :", self.id, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         for trail in range(0, self.num_of_choices):
             choice = choice_func( self.num_buttons )
+            self.choices.append(choice)
             (resA, resB, resC) = self.get_buttons_results()
             print("choice: ", choice, "results:", (resA, resB, resC))
+        print("choices:", self.choices)
+
+
+    def calc_decision_blocks(self):
+        for b_index in range(0, self.num_blocks): # 0-4
+            for click_index in range(b_index*20, (b_index+1)*20):
+                self.choices[click_index] # 0 -20 , 20 -40
+
+
+
 
 Tasks = []
 
