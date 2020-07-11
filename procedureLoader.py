@@ -89,12 +89,35 @@ class Task(object):
             (resA, resB, resC) = self.get_buttons_results()
             print("choice: ", choice, "results:", (resA, resB, resC))
         print("choices:", self.choices)
+        self.calc_decision_blocks()
 
 
     def calc_decision_blocks(self):
-        for b_index in range(0, self.num_blocks): # 0-4
-            for click_index in range(b_index*20, (b_index+1)*20):
-                self.choices[click_index] # 0 -20 , 20 -40
+
+        block_size = self.num_of_choices/self.num_blocks
+
+        blocks = np.array(self.choices).reshape(self.num_blocks, int(block_size))
+        percentage_sum = []
+
+        for block in blocks:
+            num_of_A = 0
+            num_of_B = 0
+            num_of_C = 0
+            choices, counts = np.unique(block, return_counts=True)
+
+            # for every choice in a block calc count of choice
+            for indx, count in enumerate(counts):
+                if choices[indx] == 'A':
+                    num_of_A = count
+                if choices[indx] == 'B':
+                    num_of_B = count
+                if choices[indx] == 'C':
+                    num_of_C = count
+            print(num_of_A, num_of_B, num_of_C)
+            percentage_sum.append((num_of_A / block_size, num_of_B/ block_size, num_of_C/ block_size))
+
+        print( 'percentage_sum ', percentage_sum)
+
 
 
 
@@ -110,7 +133,8 @@ for index, row in tasks.iterrows():
 T = 100
 
 def choice_rule( num ):
-    return 'A'
+
+    return 'A' if random.random() < 0.5 else 'B'
 
 
 
