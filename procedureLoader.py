@@ -53,13 +53,14 @@ class Task(object):
             self.added_value_to_C = np.mean([exp_valueA, exp_valueB])
 
     def get_buttons_results(self):
-        sample_numA = random.random(0, 1)
+        sample_numA = random.random()
+        print(sample_numA)
         if sample_numA < self.p_A1:
             result_A = self.result_A1
         else:
             result_A = self.result_A2
 
-        sample_numB = random.random(0, 1)
+        sample_numB = random.random()
         if sample_numB < self.p_B1:
             result_B = self.result_B1
         else:
@@ -67,7 +68,7 @@ class Task(object):
 
         result_C = None
         if self.num_buttons == 3:
-            sample_numC = random.random(0,1)
+            sample_numC = random.random()
             if sample_numC < self.p_C1:
                 result_C = self.result_C1
             else:
