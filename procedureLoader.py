@@ -151,11 +151,16 @@ def choice_rule( num ):
 
     return 'A' if random.random() < 0.5 else 'B'
 
+# Create empty pandas DataFrame add column names
+data = []
+df = pd.DataFrame(data, columns = ["a1", "a2", "a3", "a4", "a5", "b1", "b2", "b3", "b4", "b5", "c1", "c2", "c3", "c4", "c5"])
+df.to_csv('output.csv')
 
 
 for task in Tasks:
     # TODO create decision rule
-    task.run_task( choice_rule )
+
+    task.run_task(choice_rule)
 
 
 print("hello")
