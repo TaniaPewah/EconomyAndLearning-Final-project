@@ -76,9 +76,9 @@ class Task(object):
         if self.num_buttons == 3:
             sample_numC = random.random()
             if sample_numC < float(self.p_C1):
-                result_C = self.result_C1
+                result_C = float(self.result_C1)
             else:
-                result_C = self.result_C2
+                result_C = float(self.result_C2)
 
         #history_click_results.append(-1)
         return ( result_A , result_B, result_C )
@@ -88,7 +88,7 @@ class Task(object):
 
         print("~~~ Task number :", self.id, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         for trail in range(0, self.num_of_choices):
-            choice = choice_func( self.num_buttons, self.choices )
+            choice = choice_func( self.num_buttons, self.choices, self.num_buttons )
 
             (resA, resB, resC) = self.get_buttons_results()
             print("choice: ", choice, "results:", (resA, resB, resC))
@@ -118,7 +118,9 @@ class Task(object):
 
         block_size = self.num_of_choices/self.num_blocks
 
-        blocks = np.array(self.choices).reshape(self.num_blocks, int(block_size))
+        choices = [choice['choice'] for choice in self.choices]
+
+        blocks = np.array(choices).reshape(self.num_blocks, int(block_size))
 
         for block in blocks:
             num_of_A = 0
@@ -164,7 +166,7 @@ for index, row in tasks.iterrows():
 #num of clicks per task
 T = 100
 
-def choice_rule( num, choices ):
+def choice_rule( num, choices , num_buttons):
     # small samples random, try diffrent sample size 5
     sample_size = 5
     random_choice_for_turns = 4
@@ -174,17 +176,44 @@ def choice_rule( num, choices ):
         return 'A' if random.random() < 0.5 else 'B'
 
     if len(choices) > sample_size:
-        small_sample = random.sample(choices, sample_size)
+        small_samples = random.sample(choices, sample_size)
     else:
-        small_sample = random.sample(choices, len(choices))
+        small_samples = random.sample(choices, len(choices))
+
+    return get_choice_for_buttons(num_buttons, small_samples, sample_size)
+
+
+def get_choice_for_buttons ( num_buttons, small_samples, sample_size):
+
+    small_sample_results = {}
+
+    if num_buttons == 2:
+        small_sample_results = {'A': 0, 'B': 0}
+    elif num_buttons == 3:
+        small_sample_results = {'A': 0, 'B': 0, 'C': 0}
 
     # find mean result for every button
+    for sample in small_samples:
+        small_sample_results['A'] += sample['result_A']
+        small_sample_results['B'] += sample['result_B']
+
+        if num_buttons == 3:
+            small_sample_results['C'] += sample['result_C']
+
+
+    small_sample_results['A'] /= sample_size
+    small_sample_results['B'] /= sample_size
+    if num_buttons == 3:
+        small_sample_results['C'] /= sample_size
 
     # choose button with highest mean
+    max_choice = max(small_sample_results,  key=small_sample_results.get)
 
-    return 'A' if random.random() < 0.5 else 'B'
+    print("max choice is: ", max_choice, "max mean:", max(small_sample_results),
+          "small sample mean: ", small_sample_results)
 
-
+    return(max_choice)
+    # rare treasures + rare disasters ? stove
 
 # TODO calc the accuracy of prediction with our decision rule compared to result data (44 trials)
 
