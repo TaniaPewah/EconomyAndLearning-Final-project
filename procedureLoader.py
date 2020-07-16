@@ -88,13 +88,30 @@ class Task(object):
 
         print("~~~ Task number :", self.id, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         for trail in range(0, self.num_of_choices):
-            choice = choice_func( self.num_buttons )
-            self.choices.append(choice)
+            choice = choice_func( self.num_buttons, self.choices )
+
             (resA, resB, resC) = self.get_buttons_results()
             print("choice: ", choice, "results:", (resA, resB, resC))
+
+            self.get_chosen_result(choice, resA, resB, resC)
+
+
+
         print("choices:", self.choices)
         self.calc_decision_blocks()
         self.save_csv()
+
+    def get_chosen_result(self, choice, resA, resB, resC):
+        chosen_reward = -99999
+        if choice == 'A':
+            chosen_reward = resA
+        if choice == 'B':
+            chosen_reward = resB
+        if choice == 'C':
+            chosen_reward = resC
+
+        self.choices.append({'choice': choice, 'chosen_reward': chosen_reward,
+                             'result_A': resA, 'result_B': resB, 'result_C': resC})
 
 
     def calc_decision_blocks(self):
@@ -147,9 +164,32 @@ for index, row in tasks.iterrows():
 #num of clicks per task
 T = 100
 
-def choice_rule( num ):
+def choice_rule( num, choices ):
+    # small samples random, try diffrent sample size 5
+    sample_size = 5
+    random_choice_for_turns = 4
+
+    if len(choices) < random_choice_for_turns:
+        # TODO add random C choice if C option exists
+        return 'A' if random.random() < 0.5 else 'B'
+
+    if len(choices) > sample_size:
+        small_sample = random.sample(choices, sample_size)
+    else:
+        small_sample = random.sample(choices, len(choices))
+
+    # find mean result for every button
+
+    # choose button with highest mean
 
     return 'A' if random.random() < 0.5 else 'B'
+
+
+
+# TODO calc the accuracy of prediction with our decision rule compared to result data (44 trials)
+
+# TODO build graphs
+
 
 # Create empty pandas DataFrame add column names
 data = []
