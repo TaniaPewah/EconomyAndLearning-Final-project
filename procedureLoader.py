@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import math
 import random
 tasks = pd.read_csv('tasks.csv')
 
@@ -31,6 +32,10 @@ class Task(object):
         self.a_block_percentage = []
         self.b_block_percentage = []
         self.c_block_percentage = []
+        self.actual_A = [0,0,0,0,0]
+        self.actual_B = [0,0,0,0,0]
+        self.actual_C = [0,0,0,0,0]
+
 
     def load_task(self, row):
         # load from df to properties of Task
@@ -51,6 +56,21 @@ class Task(object):
         self.correlation_AB = row['rab']
         self.correlation_BC = row['rbc']
         self.to_add_mean_C = row['ADD']
+        self.actual_A[0] = row['block_1_A']
+        self.actual_A[1] = row['block_2_A']
+        self.actual_A[2] = row['block_3_A']
+        self.actual_A[3] = row['block_4_A']
+        self.actual_A[4] = row['block_5_A']
+        self.actual_B[0] = row['block_1_B']
+        self.actual_B[1] = row['block_2_B']
+        self.actual_B[2] = row['block_3_B']
+        self.actual_B[3] = row['block_4_B']
+        self.actual_B[4] = row['block_5_B']
+        self.actual_C[0] = 1 - (row['block_1_A'] + row['block_1_B'])
+        self.actual_C[1] = 1 - (row['block_2_A'] + row['block_2_B'])
+        self.actual_C[2] = 1 - (row['block_3_A'] + row['block_3_B'])
+        self.actual_C[3] = 1 - (row['block_4_A'] + row['block_4_B'])
+        self.actual_C[4] = 1 - (row['block_5_A'] + row['block_5_B'])
 
         # calc the ADD value if to_add_mean_C == 1
         if self.to_add_mean_C == '1':
@@ -141,20 +161,35 @@ class Task(object):
             self.b_block_percentage.append(num_of_B / block_size)
             self.c_block_percentage.append(num_of_C / block_size)
 
-        print('A', self.a_block_percentage)
-        print('B', self.b_block_percentage)
-        print('C', self.c_block_percentage)
-
 
     def save_csv(self ):
         # id of the trial, self.percentage_sum
-
-        df = pd.DataFrame([self.id] + self.a_block_percentage + self.b_block_percentage + self.c_block_percentage)
+        accuracy = 0
+        if self.id < 45:
+            accuracy = self.calc_accuracy_per_row()
+        print('accuracy:', accuracy)
+        df = pd.DataFrame([self.id] + self.a_block_percentage + self.b_block_percentage + self.c_block_percentage + [accuracy])
         df = df.transpose()
         print(df)
-        df.to_csv("output.csv", mode ='a', index=False, header=False)
 
+        df.to_csv("output4.csv", mode ='a', index=False, header=False)
 
+    def calc_accuracy_per_row(self):
+
+        result = 0
+        for i in range(0, 5):
+            result += (self.a_block_percentage[i] - self.actual_A[i])**2
+            result += (self.b_block_percentage[i] - self.actual_B[i])**2
+
+            if self.num_buttons == 3:
+                result += (self.c_block_percentage[i] - self.actual_C[i])**2
+
+        if self.num_buttons == 3:
+            result /= 15
+        elif self.num_buttons == 2:
+            result /= 10
+
+        return result
 
 Tasks = []
 
@@ -168,7 +203,7 @@ T = 100
 
 def choice_rule( num, choices , num_buttons):
     # small samples random, try diffrent sample size 5
-    sample_size = 5
+    sample_size = 4
     random_choice_for_turns = 4
 
     if len(choices) < random_choice_for_turns:
@@ -222,8 +257,8 @@ def get_choice_for_buttons ( num_buttons, small_samples, sample_size):
 
 # Create empty pandas DataFrame add column names
 data = []
-df = pd.DataFrame(data, columns = ["a1", "a2", "a3", "a4", "a5", "b1", "b2", "b3", "b4", "b5", "c1", "c2", "c3", "c4", "c5"])
-df.to_csv('output.csv')
+df = pd.DataFrame(data, columns = ["a1", "a2", "a3", "a4", "a5", "b1", "b2", "b3", "b4", "b5", "c1", "c2", "c3", "c4", "c5", "Briars"])
+df.to_csv('output4.csv')
 
 
 for task in Tasks:
