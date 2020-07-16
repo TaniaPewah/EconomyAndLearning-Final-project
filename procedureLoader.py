@@ -250,9 +250,6 @@ def get_choice_for_buttons ( num_buttons, small_samples, sample_size):
     return(max_choice)
     # rare treasures + rare disasters ? stove
 
-# TODO calc the accuracy of prediction with our decision rule compared to result data (44 trials)
-
-# TODO build graphs
 
 
 # Create empty pandas DataFrame add column names
@@ -262,9 +259,11 @@ df.to_csv('output4.csv')
 
 
 for task in Tasks:
-    # TODO create decision rule
-
     task.run_task(choice_rule)
 
+# TODO build graphs,
+#  refine decision rule based on worst accuracy,
+#  find params from range,
+#  decide on two phenomena - small samples?
 
 print("hello")
