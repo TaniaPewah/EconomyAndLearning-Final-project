@@ -20,6 +20,10 @@ def load_csv(filename, no_first):
             dataset.append(row)
     return dataset
 
+def cut_first_col(dataset):
+    for indx, row in enumerate(dataset):
+        dataset[indx] = row[1:]
+
 
 # Convert string column to float
 def str_column_to_float(dataset, column):
@@ -43,7 +47,7 @@ def str_column_to_int(dataset, column):
 def dataset_minmax(dataset):
     minmax = list()
     for i in range(len(dataset[0])):
-        col_values = [row[i] for row in dataset]
+        col_values = [float(row[i]) for row in dataset]
         value_min = min(col_values)
         value_max = max(col_values)
         minmax.append([value_min, value_max])
@@ -53,24 +57,26 @@ def dataset_minmax(dataset):
 # Rescale dataset columns to the range 0-1
 def normalize_dataset(dataset, minmax):
     for row in dataset:
-        for i in range(len(row)):
-            row[i] = (row[i] - minmax[i][0]) / (minmax[i][1] - minmax[i][0])
+        for i in range(1, len(row)-1):
+            if (minmax[i][1] - minmax[i][0]) == 0:
+                continue
+            row[i] = (float(row[i]) - minmax[i][0]) / (minmax[i][1] - minmax[i][0])
 
 
 # calculate the Euclidean distance between two vectors
 def euclidean_distance(row1, row2):
     distance = 0.0
     for i in range(len(row1)-1):
-        distance += (row1[i] - row2[i])**2
+        distance += (float(row1[i]) - float(row2[i]))**2
     return sqrt(distance)
 
 # Locate the most similar neighbors
 def get_neighbors(train, test_row, num_neighbors):
     distances = list()
-    if test_row[1] == 3:
-        train = [trial for trial in train if trial[1] == 3]
-    elif test_row[1] == 2:
-        train = [trial for trial in train if trial[1] == 2]
+    if test_row[0] == 1:
+        train = [trial for trial in train if trial[0] == 1]
+    elif test_row[0] == 0:
+        train = [trial for trial in train if trial[0] == 0]
 
     for train_row in train:
         dist = euclidean_distance(test_row, train_row)
@@ -171,8 +177,10 @@ for block in range(0,5):
     no_first = True
     dataset = load_csv(filename, no_first)
 
-    for i in range(len(dataset[0])-1):
-        str_column_to_float(dataset, i)
+
+    normalize_dataset(dataset, dataset_minmax(dataset))
+    cut_first_col(dataset)
+
     scores = evaluate_algorithm(dataset, k_nearest_neighbors, n_folds, num_neighbors, blockname)
     print('Scores: %s' % scores)
     print('Mean Accuracy: %.3f%%' % (sum(scores)/float(len(scores))))
