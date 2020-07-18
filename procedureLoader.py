@@ -219,7 +219,21 @@ for index, row in tasks.iterrows():
 #num of clicks per task
 T = 100
 
-def identify_rare_dis(choices):
+def identify_rare_dis(choices, num_buttons):
+    results = [(choices[index]['result_A'], choices[index]['result_B'], choices[index]['result_C']) for index in range(0, len(choices) - 1)]
+    meanA = np.mean([result[0] for result in results])
+    stdA = np.std([result[0] for result in results])
+
+    meanB = np.mean([result[1] for result in results])
+    stdB = np.std([result[1] for result in results])
+
+    meanC = 0
+    stdC = 0
+    if num_buttons == 3:
+        meanC = np.mean([result[2] for result in results])
+        stdC = np.std([result[2] for result in results])
+
+    print(meanA , " " , meanB , " " , meanC, " ", stdA, " ", stdB, " ", stdC)
 
     for choice in choices:
         resA = choice['result_A']
@@ -231,7 +245,8 @@ def choice_rule( num, choices, num_buttons, sample_size, random_choice_for_turns
     # small samples random, try diffrent sample size 5
 
     # check choices and seen history for rare disaster:
-    rare_disaster_choice = identify_rare_dis(choices)
+    if len(choices) > random_choice_for_turns:
+        rare_disaster_choice = identify_rare_dis(choices, num_buttons)
 
     if len(choices) < random_choice_for_turns:
         if num_buttons == 3:
