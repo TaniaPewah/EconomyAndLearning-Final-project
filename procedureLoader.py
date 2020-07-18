@@ -80,18 +80,24 @@ class Task(object):
 
     def get_buttons_results(self):
         sample_numA = random.random()
+        sample_numB = random.random()
+        sample_numC = random.random()
 
         # ea is drawn from N(0, SA)
         Ea = np.random.normal(0, self.standart_dev_SA)
         Eb = np.random.normal(0, self.standart_dev_SB)
         Ec = 0
 
+        if self.correlation_AB == 1:
+            sample_numB = sample_numA
+        if self.correlation_AB == -1:
+            sample_numB = 1 - sample_numA
+
         if sample_numA < self.p_A1:
             result_A = self.result_A1
         else:
             result_A = self.result_A2
 
-        sample_numB = random.random()
         if sample_numB < self.p_B1:
             result_B = self.result_B1
         else:
@@ -100,7 +106,12 @@ class Task(object):
         result_C = None
         if self.num_buttons == 3:
             Ec = np.random.normal(0, float(self.standart_dev_SC))
-            sample_numC = random.random()
+
+            if self.correlation_BC == 1:
+                sample_numC = sample_numB
+            if self.correlation_BC == -1:
+                sample_numC = 1 - sample_numB
+
             if sample_numC < float(self.p_C1):
                 result_C = float(self.result_C1) + Ec
             else:
@@ -208,8 +219,19 @@ for index, row in tasks.iterrows():
 #num of clicks per task
 T = 100
 
+def identify_rare_dis(choices):
+
+    for choice in choices:
+        resA = choice['result_A']
+        resB = choice['result_B']
+        resC = choice['result_C']
+    return 0
+
 def choice_rule( num, choices, num_buttons, sample_size, random_choice_for_turns):
     # small samples random, try diffrent sample size 5
+
+    # check choices and seen history for rare disaster:
+    rare_disaster_choice = identify_rare_dis(choices)
 
     if len(choices) < random_choice_for_turns:
         if num_buttons == 3:
@@ -291,7 +313,7 @@ def find_params( tasks, list_of_sample_size, list_random_choice_for_turns ):
                 task.run_task(choice_rule, sample_size, random_choice)
                 task.run_task(choice_rule, sample_size, random_choice)
                 task.run_task(choice_rule, sample_size, random_choice)
-            # TODO compare each briars score and return the params for the minimum best
+            # compare each briars score and return the params for the minimum best
             briers_score_avg = calc_briers_avg(csv_name)
 
             if briers_score_avg < min_briers_score:
