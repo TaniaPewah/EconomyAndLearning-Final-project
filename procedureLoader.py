@@ -111,7 +111,6 @@ class Task(object):
 
     def run_task(self, choice_func, sample_size, random_choice_for_turns):
 
-        print("~~~ Task number :", self.id, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         for trail in range(0, self.num_of_choices):
             choice = choice_func( self.num_buttons, self.choices, self.num_buttons, sample_size, random_choice_for_turns)
 
@@ -213,11 +212,12 @@ def choice_rule( num, choices, num_buttons, sample_size, random_choice_for_turns
     # small samples random, try diffrent sample size 5
 
     if len(choices) < random_choice_for_turns:
-        # TODO add random C choice if C option exists
         if num_buttons == 3:
             return random.sample(['A','B','C'], 1)[0]
         return 'A' if random.random() < 0.5 else 'B'
 
+    # TODO should sample_size be bigger than the random_choice_for_turns?
+    # should sample size stay the same for all rounds of choice?
     if len(choices) > sample_size:
         small_samples = random.sample(choices, sample_size)
     else:
@@ -282,8 +282,18 @@ def find_params( tasks, list_of_sample_size, list_random_choice_for_turns ):
             df.to_csv(csv_name)
             for task in tasks:
                 task.run_task(choice_rule, sample_size, random_choice)
+                task.run_task(choice_rule, sample_size, random_choice)
+                task.run_task(choice_rule, sample_size, random_choice)
+                task.run_task(choice_rule, sample_size, random_choice)
+                task.run_task(choice_rule, sample_size, random_choice)
+                task.run_task(choice_rule, sample_size, random_choice)
+                task.run_task(choice_rule, sample_size, random_choice)
+                task.run_task(choice_rule, sample_size, random_choice)
+                task.run_task(choice_rule, sample_size, random_choice)
+                task.run_task(choice_rule, sample_size, random_choice)
             # TODO compare each briars score and return the params for the minimum best
             briers_score_avg = calc_briers_avg(csv_name)
+
             if briers_score_avg < min_briers_score:
                 min_briers_score = briers_score_avg
                 best_sample_size = sample_size
@@ -299,10 +309,14 @@ def find_random_choice_for_turns():
 
 # TODO
 #  refine decision rule based on worst accuracy,
-#  decide on two phenomena - small samples?
+#  decide on two phenomena - small samples - underweighting of rare events, hot stove
+#  terrible disaster happends- hot stove effect
+#  add Rab correlation
 
 
-find_params(Tasks, range(1,11), range(0,15))
+find_params(Tasks, range(4,6), range(2,7))
+#find_params(Tasks, range(3,7), range(3,9))
+#find_params(Tasks, range(3,7), range(3,9))
 print("hello")
 
 
