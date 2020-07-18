@@ -1,8 +1,8 @@
 import pandas as pd
 import numpy as np
-import math
 import random
-tasks = pd.read_csv('tasks.csv')
+tasks = pd.read_csv('tasks44.csv')
+
 
 class Task(object):
     def __init__(self ):
@@ -104,22 +104,21 @@ class Task(object):
         return ( result_A , result_B, result_C )
 
 
-    def run_task(self, choice_func):
+    def run_task(self, choice_func, sample_size, random_choice_for_turns):
 
         print("~~~ Task number :", self.id, "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         for trail in range(0, self.num_of_choices):
-            choice = choice_func( self.num_buttons, self.choices, self.num_buttons )
+            choice = choice_func( self.num_buttons, self.choices, self.num_buttons, sample_size, random_choice_for_turns)
 
             (resA, resB, resC) = self.get_buttons_results()
-            print("choice: ", choice, "results:", (resA, resB, resC))
+            #print("choice: ", choice, "results:", (resA, resB, resC))
 
             self.get_chosen_result(choice, resA, resB, resC)
 
-
-
-        print("choices:", self.choices)
+        #print("choices:", self.choices)
         self.calc_decision_blocks()
-        self.save_csv()
+        csv_name = str(sample_size) + '_' + str(random_choice_for_turns)
+        self.save_csv(csv_name)
 
     def get_chosen_result(self, choice, resA, resB, resC):
         chosen_reward = -99999
@@ -162,17 +161,21 @@ class Task(object):
             self.c_block_percentage.append(num_of_C / block_size)
 
 
-    def save_csv(self ):
+    def save_csv(self, params_name ):
         # id of the trial, self.percentage_sum
         accuracy = 0
         if self.id < 45:
             accuracy = self.calc_accuracy_per_row()
-        print('accuracy:', accuracy)
+        #print('accuracy:', accuracy)
         df = pd.DataFrame([self.id] + self.a_block_percentage + self.b_block_percentage + self.c_block_percentage + [accuracy])
         df = df.transpose()
-        print(df)
+        #print(df)
 
-        df.to_csv("output4.csv", mode ='a', index=False, header=False)
+        df.to_csv("output" + params_name + ".csv", mode ='a', index=False, header=False)
+        self.choices = []
+        self.a_block_percentage = []
+        self.b_block_percentage = []
+        self.c_block_percentage = []
 
     def calc_accuracy_per_row(self):
 
@@ -201,10 +204,8 @@ for index, row in tasks.iterrows():
 #num of clicks per task
 T = 100
 
-def choice_rule( num, choices , num_buttons):
+def choice_rule( num, choices, num_buttons, sample_size, random_choice_for_turns):
     # small samples random, try diffrent sample size 5
-    sample_size = 4
-    random_choice_for_turns = 4
 
     if len(choices) < random_choice_for_turns:
         # TODO add random C choice if C option exists
@@ -244,8 +245,8 @@ def get_choice_for_buttons ( num_buttons, small_samples, sample_size):
     # choose button with highest mean
     max_choice = max(small_sample_results,  key=small_sample_results.get)
 
-    print("max choice is: ", max_choice, "max mean:", max(small_sample_results),
-          "small sample mean: ", small_sample_results)
+    #print("max choice is: ", max_choice, "max mean:", max(small_sample_results),
+    #      "small sample mean: ", small_sample_results)
 
     return(max_choice)
     # rare treasures + rare disasters ? stove
@@ -255,15 +256,33 @@ def get_choice_for_buttons ( num_buttons, small_samples, sample_size):
 # Create empty pandas DataFrame add column names
 data = []
 df = pd.DataFrame(data, columns = ["a1", "a2", "a3", "a4", "a5", "b1", "b2", "b3", "b4", "b5", "c1", "c2", "c3", "c4", "c5", "Briars"])
-df.to_csv('output4.csv')
 
 
-for task in Tasks:
-    task.run_task(choice_rule)
+def find_params( tasks, list_of_sample_size, list_random_choice_for_turns ):
+    accuracy_briars = 1
+    for random_choice in list_random_choice_for_turns:
+        for sample_size in list_of_sample_size:
+            csv_name = str(sample_size) + '_' + str(random_choice)
 
-# TODO build graphs,
+            df.to_csv("output" + csv_name + ".csv")
+            for task in tasks:
+                task.run_task(choice_rule, sample_size, random_choice)
+                # TODO compare each briars score and return the params for the minimum best
+
+    return 0
+
+
+def find_random_choice_for_turns():
+    return 0
+
+# TODO
 #  refine decision rule based on worst accuracy,
-#  find params from range,
 #  decide on two phenomena - small samples?
 
+
+find_params(Tasks, range(1,3), range(1,3))
 print("hello")
+
+
+
+
