@@ -81,6 +81,11 @@ class Task(object):
     def get_buttons_results(self):
         sample_numA = random.random()
 
+        # ea is drawn from N(0, SA)
+        Ea = np.random.normal(0, self.standart_dev_SA)
+        Eb = np.random.normal(0, self.standart_dev_SB)
+        Ec = 0
+
         if sample_numA < self.p_A1:
             result_A = self.result_A1
         else:
@@ -94,14 +99,14 @@ class Task(object):
 
         result_C = None
         if self.num_buttons == 3:
+            Ec = np.random.normal(0, float(self.standart_dev_SC))
             sample_numC = random.random()
             if sample_numC < float(self.p_C1):
-                result_C = float(self.result_C1)
+                result_C = float(self.result_C1) + Ec
             else:
-                result_C = float(self.result_C2)
+                result_C = float(self.result_C2) + Ec
 
-        #history_click_results.append(-1)
-        return ( result_A , result_B, result_C )
+        return ( result_A + Ea , result_B + Eb, result_C)
 
 
     def run_task(self, choice_func, sample_size, random_choice_for_turns):
@@ -209,6 +214,8 @@ def choice_rule( num, choices, num_buttons, sample_size, random_choice_for_turns
 
     if len(choices) < random_choice_for_turns:
         # TODO add random C choice if C option exists
+        if num_buttons == 3:
+            return random.sample(['A','B','C'], 1)[0]
         return 'A' if random.random() < 0.5 else 'B'
 
     if len(choices) > sample_size:
@@ -295,7 +302,7 @@ def find_random_choice_for_turns():
 #  decide on two phenomena - small samples?
 
 
-find_params(Tasks, range(1,15), range(7,8))
+find_params(Tasks, range(1,11), range(0,15))
 print("hello")
 
 
