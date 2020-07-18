@@ -258,16 +258,31 @@ data = []
 df = pd.DataFrame(data, columns = ["a1", "a2", "a3", "a4", "a5", "b1", "b2", "b3", "b4", "b5", "c1", "c2", "c3", "c4", "c5", "Briars"])
 
 
+def calc_briers_avg(csv_name):
+    results = pd.read_csv(csv_name)
+    average = results["Briars"].mean()
+    return average
+
+
 def find_params( tasks, list_of_sample_size, list_random_choice_for_turns ):
-    accuracy_briars = 1
+    min_briers_score = 1
+    best_sample_size = -1
+    best_random_choice = -1
+
     for random_choice in list_random_choice_for_turns:
         for sample_size in list_of_sample_size:
-            csv_name = str(sample_size) + '_' + str(random_choice)
-
-            df.to_csv("output" + csv_name + ".csv")
+            csv_name = "output" + str(sample_size) + '_' + str(random_choice) + ".csv"
+            df.to_csv(csv_name)
             for task in tasks:
                 task.run_task(choice_rule, sample_size, random_choice)
-                # TODO compare each briars score and return the params for the minimum best
+            # TODO compare each briars score and return the params for the minimum best
+            briers_score_avg = calc_briers_avg(csv_name)
+            if briers_score_avg < min_briers_score:
+                min_briers_score = briers_score_avg
+                best_sample_size = sample_size
+                best_random_choice = random_choice
+
+    print("min_briers_score: ", min_briers_score, "  best sample size: ", best_sample_size, "  best_random_choice: ", best_random_choice)
 
     return 0
 
@@ -280,7 +295,7 @@ def find_random_choice_for_turns():
 #  decide on two phenomena - small samples?
 
 
-find_params(Tasks, range(1,3), range(1,3))
+find_params(Tasks, range(1,15), range(7,8))
 print("hello")
 
 
