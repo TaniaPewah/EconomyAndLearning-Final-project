@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import random
+import statistics
 tasks = pd.read_csv('tasks44.csv')
 
 
@@ -35,6 +36,8 @@ class Task(object):
         self.actual_A = [0,0,0,0,0]
         self.actual_B = [0,0,0,0,0]
         self.actual_C = [0,0,0,0,0]
+        self.chance_to_chose_risky = 1
+        self.danger_button = 'X'
 
 
     def load_task(self, row):
@@ -123,7 +126,8 @@ class Task(object):
     def run_task(self, choice_func, sample_size, random_choice_for_turns):
 
         for trail in range(0, self.num_of_choices):
-            choice = choice_func( self.num_buttons, self.choices, self.num_buttons, sample_size, random_choice_for_turns)
+            choice, self.chance_to_chose_risky, self.danger_button = \
+                choice_func(self.num_buttons, self.choices, self.num_buttons, sample_size, random_choice_for_turns, self.chance_to_chose_risky, self.danger_button)
 
             (resA, resB, resC) = self.get_buttons_results()
             #print("choice: ", choice, "results:", (resA, resB, resC))
@@ -220,38 +224,99 @@ for index, row in tasks.iterrows():
 T = 100
 
 def identify_rare_dis(choices, num_buttons):
-    results = [(choices[index]['result_A'], choices[index]['result_B'], choices[index]['result_C']) for index in range(0, len(choices) - 1)]
-    meanA = np.mean([result[0] for result in results])
-    stdA = np.std([result[0] for result in results])
+    results_before_last = [(choices[index]['result_A'], choices[index]['result_B'], choices[index]['result_C']) for index in range(0, len(choices) - 1)]
+    meanA = np.mean([result[0] for result in results_before_last])
+    stdA = statistics.stdev([result[0] for result in results_before_last])
 
-    meanB = np.mean([result[1] for result in results])
-    stdB = np.std([result[1] for result in results])
+    meanB = np.mean([result[1] for result in results_before_last])
+    stdB = statistics.stdev([result[1] for result in results_before_last])
 
     meanC = 0
     stdC = 0
     if num_buttons == 3:
-        meanC = np.mean([result[2] for result in results])
-        stdC = np.std([result[2] for result in results])
+        meanC = np.mean([result[2] for result in results_before_last])
+        stdC = statistics.stdev([result[2] for result in results_before_last])
 
-    print(meanA , " " , meanB , " " , meanC, " ", stdA, " ", stdB, " ", stdC)
+    results_with_last = [(choices[index]['result_A'], choices[index]['result_B'], choices[index]['result_C']) for index in range(0, len(choices))]
+    meanA_last = np.mean([result[0] for result in results_with_last])
+    stdA_last = statistics.stdev([result[0] for result in results_with_last])
 
-    for choice in choices:
-        resA = choice['result_A']
-        resB = choice['result_B']
-        resC = choice['result_C']
-    return 0
+    meanB_last = np.mean([result[1] for result in results_with_last])
+    stdB_last = statistics.stdev([result[1] for result in results_with_last])
 
-def choice_rule( num, choices, num_buttons, sample_size, random_choice_for_turns):
+    meanC_last = 0
+    stdC_last = 0
+    if num_buttons == 3:
+        meanC_last = np.mean([result[2] for result in results_with_last])
+        stdC_last = statistics.stdev([result[2] for result in results_with_last])
+
+    danger_button = 'X'
+    chance_to_chose_risky = 1
+
+    chance_to_chose_riskyA, danger_buttonA = check_disaster(stdA, stdA_last, results_with_last, choices, 'A', 0)
+    chance_to_chose_riskyB, danger_buttonB = check_disaster(stdB, stdB_last, results_with_last, choices, 'B', 1)
+
+
+    if chance_to_chose_riskyA == chance_to_chose_riskyB == 1:
+        danger_button = 'X'
+    elif chance_to_chose_riskyA < chance_to_chose_riskyB:
+        chance_to_chose_risky = chance_to_chose_riskyA
+        danger_button = 'A'
+    else:
+        chance_to_chose_risky = chance_to_chose_riskyB
+        danger_button = 'B'
+
+    if num_buttons == 3:
+        chance_to_chose_riskyC, danger_buttonC = check_disaster(stdC, stdC_last, results_with_last, choices, 'C', 2)
+
+        if chance_to_chose_riskyC < chance_to_chose_riskyB:
+            chance_to_chose_risky = chance_to_chose_riskyC
+            danger_button = 'C'
+
+    return chance_to_chose_risky, danger_button
+
+def check_disaster(std_X, std_X_last, results_with_last_X, choices, danger_button, index ):
+
+    chance_to_chose_risky = 1
+    danger_button = danger_button
+    if std_X < 3 and std_X_last > 3:
+
+        last_X = results_with_last_X[len(choices)-1][index]
+        if last_X < 0 and (np.sum(np.array(results_with_last_X) == last_X) / len(results_with_last_X)) < 0.1:
+
+            # was this option chosen by user?
+            my_choice = choices[len(choices)-1]['choice']
+            if my_choice == danger_button:
+                chance_to_chose_risky = 0.5
+            else:
+                chance_to_chose_risky = 0.7
+
+            # was extreme minimum value
+            if std_X_last > 7:
+                chance_to_chose_risky *= 0.8
+
+    return chance_to_chose_risky, danger_button
+
+
+def choice_rule( num, choices, num_buttons, sample_size, random_choice_for_turns, prev_chance_to_chose_risky, prev_danger_button):
     # small samples random, try diffrent sample size 5
-
-    # check choices and seen history for rare disaster:
-    if len(choices) > random_choice_for_turns:
-        rare_disaster_choice = identify_rare_dis(choices, num_buttons)
 
     if len(choices) < random_choice_for_turns:
         if num_buttons == 3:
-            return random.sample(['A','B','C'], 1)[0]
-        return 'A' if random.random() < 0.5 else 'B'
+            return random.sample(['A','B','C'], 1)[0], prev_chance_to_chose_risky, prev_danger_button
+        return 'A' if random.random() < 0.5 else 'B', prev_chance_to_chose_risky, prev_danger_button
+
+    chance_to_chose_risky = 0
+    danger_button = 'X'
+
+    # check choices and seen history for rare disaster:
+    if len(choices) > random_choice_for_turns:
+        chance_to_chose_risky, danger_button = identify_rare_dis(choices, num_buttons)
+
+    # we want to preserve previous dangerous button if the new button is less risky or no new danger identified
+    if danger_button == 'X' or prev_chance_to_chose_risky < chance_to_chose_risky:
+        danger_button = prev_danger_button
+        chance_to_chose_risky = prev_chance_to_chose_risky
 
     # TODO should sample_size be bigger than the random_choice_for_turns?
     # should sample size stay the same for all rounds of choice?
@@ -260,10 +325,10 @@ def choice_rule( num, choices, num_buttons, sample_size, random_choice_for_turns
     else:
         small_samples = random.sample(choices, len(choices))
 
-    return get_choice_for_buttons(num_buttons, small_samples, sample_size)
+    return get_choice_for_buttons(num_buttons, small_samples, sample_size, chance_to_chose_risky, danger_button)
 
 
-def get_choice_for_buttons ( num_buttons, small_samples, sample_size):
+def get_choice_for_buttons ( num_buttons, small_samples, sample_size, chance_to_chose_risky, danger_button):
 
     small_sample_results = {}
 
@@ -287,14 +352,17 @@ def get_choice_for_buttons ( num_buttons, small_samples, sample_size):
         small_sample_results['C'] /= sample_size
 
     # choose button with highest mean
-    max_choice = max(small_sample_results,  key=small_sample_results.get)
+    max_choice = max(small_sample_results, key=small_sample_results.get)
+    if max_choice == danger_button and random.random() > chance_to_chose_risky:
+        # change choice to second max
+        small_sample_results.pop(danger_button)
+        max_choice = max(small_sample_results, key=small_sample_results.get)
 
     #print("max choice is: ", max_choice, "max mean:", max(small_sample_results),
     #      "small sample mean: ", small_sample_results)
 
-    return(max_choice)
+    return max_choice, chance_to_chose_risky, danger_button
     # rare treasures + rare disasters ? stove
-
 
 
 # Create empty pandas DataFrame add column names
@@ -321,13 +389,7 @@ def find_params( tasks, list_of_sample_size, list_random_choice_for_turns ):
                 task.run_task(choice_rule, sample_size, random_choice)
                 task.run_task(choice_rule, sample_size, random_choice)
                 task.run_task(choice_rule, sample_size, random_choice)
-                task.run_task(choice_rule, sample_size, random_choice)
-                task.run_task(choice_rule, sample_size, random_choice)
-                task.run_task(choice_rule, sample_size, random_choice)
-                task.run_task(choice_rule, sample_size, random_choice)
-                task.run_task(choice_rule, sample_size, random_choice)
-                task.run_task(choice_rule, sample_size, random_choice)
-                task.run_task(choice_rule, sample_size, random_choice)
+                
             # compare each briars score and return the params for the minimum best
             briers_score_avg = calc_briers_avg(csv_name)
 
@@ -348,7 +410,7 @@ def find_random_choice_for_turns():
 #  refine decision rule based on worst accuracy,
 #  decide on two phenomena - small samples - underweighting of rare events, hot stove
 #  terrible disaster happends- hot stove effect
-#  add Rab correlation
+
 
 
 find_params(Tasks, range(4,6), range(2,7))
