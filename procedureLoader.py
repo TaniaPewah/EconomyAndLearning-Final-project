@@ -33,7 +33,6 @@ class Task(object):
         self.c_block_percentage = []
         self.actual_A = [0,0,0,0,0]
         self.actual_B = [0,0,0,0,0]
-        self.actual_C = [0, 0, 0, 0, 0]
         self.chance_to_chose_risky = 1
         self.danger_button = 'X'
 
@@ -68,12 +67,6 @@ class Task(object):
             self.actual_B[2] = row['block_3_B']
             self.actual_B[3] = row['block_4_B']
             self.actual_B[4] = row['block_5_B']
-            self.actual_C[0] = 1 - (row['block_1_A'] + row['block_1_B'])
-            self.actual_C[1] = 1 - (row['block_2_A'] + row['block_2_B'])
-            self.actual_C[2] = 1 - (row['block_3_A'] + row['block_3_B'])
-            self.actual_C[3] = 1 - (row['block_4_A'] + row['block_4_B'])
-            self.actual_C[4] = 1 - (row['block_5_A'] + row['block_5_B'])
-
 
         # calc the ADD value if to_add_mean_C == 1
         if self.to_add_mean_C == '1':
@@ -127,7 +120,7 @@ class Task(object):
 
         for trail in range(0, self.num_of_choices):
             choice, self.chance_to_chose_risky, self.danger_button = \
-                choice_func(self.num_buttons, self.choices, self.num_buttons, sample_size, random_choice_for_turns, self.chance_to_chose_risky, self.danger_button)
+                choice_func( self.choices, self.num_buttons, sample_size, random_choice_for_turns, self.chance_to_chose_risky, self.danger_button)
 
             (resA, resB, resC) = self.get_buttons_results()
             #print("choice: ", choice, "results:", (resA, resB, resC))
@@ -194,9 +187,11 @@ class Task(object):
             accuracy = self.calc_accuracy_per_row()
         #print('accuracy:', accuracy)
         if unknown == "known":
-            df = pd.DataFrame([self.id] + self.a_block_percentage + self.b_block_percentage + self.c_block_percentage + [accuracy])
+            df = pd.DataFrame([self.id] + self.a_block_percentage + self.b_block_percentage + [accuracy])
+            print("known")
         elif unknown == "unknown":
             df = pd.DataFrame([self.id] + self.a_block_percentage + self.b_block_percentage)
+            print("unknown")
         df = df.transpose()
         #print(df)
 
@@ -204,7 +199,6 @@ class Task(object):
         self.choices = []
         self.a_block_percentage = []
         self.b_block_percentage = []
-        self.c_block_percentage = []
 
     def calc_accuracy_per_row(self):
 
@@ -213,13 +207,7 @@ class Task(object):
             result += (self.a_block_percentage[i] - self.actual_A[i])**2
             result += (self.b_block_percentage[i] - self.actual_B[i])**2
 
-            if self.num_buttons == 3:
-                result += (self.c_block_percentage[i] - self.actual_C[i]) ** 2
-
-        if self.num_buttons == 3:
-            result /= 15
-        elif self.num_buttons == 2:
-            result /= 10
+        result /= 10
 
         return result
 
@@ -297,7 +285,7 @@ def check_disaster(std_X, std_X_last, results_with_last_X, choices, danger_butto
     return chance_to_chose_risky, danger_button
 
 
-def choice_rule( num, choices, num_buttons, sample_size, random_choice_for_turns, prev_chance_to_chose_risky, prev_danger_button):
+def choice_rule( choices, num_buttons, sample_size, random_choice_for_turns, prev_chance_to_chose_risky, prev_danger_button):
     # small samples random, try diffrent sample size 5
 
     if len(choices) < random_choice_for_turns:
@@ -365,8 +353,7 @@ def get_choice_for_buttons ( num_buttons, small_samples, sample_size, chance_to_
 
 # Create empty pandas DataFrame add column names
 data = []
-df = pd.DataFrame(data, columns = ["a1", "a2", "a3", "a4", "a5", "b1", "b2", "b3", "b4", "b5", "c1", "c2", "c3", "c4", "c5", "Briars"])
-#df = pd.DataFrame(data, columns = ["a1", "a2", "a3", "a4", "a5", "b1", "b2", "b3", "b4", "b5", "Briars"])
+df = pd.DataFrame(data, columns = ["a1", "a2", "a3", "a4", "a5", "b1", "b2", "b3", "b4", "b5", "Briars"])
 
 
 def calc_briers_avg(csv_name):
@@ -385,6 +372,9 @@ def find_params( tasks, list_of_sample_size, list_random_choice_for_turns ):
             csv_name = "output" + str(sample_size) + '_' + str(random_choice) + ".csv"
             df.to_csv(csv_name)
             for task in tasks:
+                task.run_task(choice_rule, sample_size, random_choice, csv_name)
+                task.run_task(choice_rule, sample_size, random_choice, csv_name)
+                task.run_task(choice_rule, sample_size, random_choice, csv_name)
                 task.run_task(choice_rule, sample_size, random_choice, csv_name)
 
             # compare each briars score and return the params for the minimum best
@@ -408,7 +398,7 @@ def find_params( tasks, list_of_sample_size, list_random_choice_for_turns ):
 
 
 
-find_params(Tasks, range(3,8), range(3,7))
+find_params(Tasks, range(3,7), range(3,7))
 
 def calc_unknown( filename ):
     # Create empty pandas DataFrame add column names
