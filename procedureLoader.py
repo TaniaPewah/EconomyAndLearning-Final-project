@@ -25,22 +25,20 @@ class Task(object):
         self.correlation_BC = None
         self.to_add_mean_C = None
         self.added_value_to_C = None
-        self.history_click_results =[]
         self.num_of_choices = 100
         self.choices = []
         self.num_blocks = 5
-        self.percentage_sum = []
         self.a_block_percentage = []
         self.b_block_percentage = []
         self.c_block_percentage = []
         self.actual_A = [0,0,0,0,0]
         self.actual_B = [0,0,0,0,0]
-        self.actual_C = [0,0,0,0,0]
+        self.actual_C = [0, 0, 0, 0, 0]
         self.chance_to_chose_risky = 1
         self.danger_button = 'X'
 
 
-    def load_task(self, row):
+    def load_task(self, row, unknown):
         # load from df to properties of Task
         self.id = row['task_n']
         self.num_buttons = row['n']
@@ -59,21 +57,23 @@ class Task(object):
         self.correlation_AB = row['rab']
         self.correlation_BC = row['rbc']
         self.to_add_mean_C = row['ADD']
-        self.actual_A[0] = row['block_1_A']
-        self.actual_A[1] = row['block_2_A']
-        self.actual_A[2] = row['block_3_A']
-        self.actual_A[3] = row['block_4_A']
-        self.actual_A[4] = row['block_5_A']
-        self.actual_B[0] = row['block_1_B']
-        self.actual_B[1] = row['block_2_B']
-        self.actual_B[2] = row['block_3_B']
-        self.actual_B[3] = row['block_4_B']
-        self.actual_B[4] = row['block_5_B']
-        self.actual_C[0] = 1 - (row['block_1_A'] + row['block_1_B'])
-        self.actual_C[1] = 1 - (row['block_2_A'] + row['block_2_B'])
-        self.actual_C[2] = 1 - (row['block_3_A'] + row['block_3_B'])
-        self.actual_C[3] = 1 - (row['block_4_A'] + row['block_4_B'])
-        self.actual_C[4] = 1 - (row['block_5_A'] + row['block_5_B'])
+        if unknown != "unknown":
+            self.actual_A[0] = row['block_1_A']
+            self.actual_A[1] = row['block_2_A']
+            self.actual_A[2] = row['block_3_A']
+            self.actual_A[3] = row['block_4_A']
+            self.actual_A[4] = row['block_5_A']
+            self.actual_B[0] = row['block_1_B']
+            self.actual_B[1] = row['block_2_B']
+            self.actual_B[2] = row['block_3_B']
+            self.actual_B[3] = row['block_4_B']
+            self.actual_B[4] = row['block_5_B']
+            self.actual_C[0] = 1 - (row['block_1_A'] + row['block_1_B'])
+            self.actual_C[1] = 1 - (row['block_2_A'] + row['block_2_B'])
+            self.actual_C[2] = 1 - (row['block_3_A'] + row['block_3_B'])
+            self.actual_C[3] = 1 - (row['block_4_A'] + row['block_4_B'])
+            self.actual_C[4] = 1 - (row['block_5_A'] + row['block_5_B'])
+
 
         # calc the ADD value if to_add_mean_C == 1
         if self.to_add_mean_C == '1':
@@ -123,7 +123,7 @@ class Task(object):
         return ( result_A + Ea , result_B + Eb, result_C)
 
 
-    def run_task(self, choice_func, sample_size, random_choice_for_turns):
+    def run_task(self, choice_func, sample_size, random_choice_for_turns, csv_name):
 
         for trail in range(0, self.num_of_choices):
             choice, self.chance_to_chose_risky, self.danger_button = \
@@ -134,10 +134,18 @@ class Task(object):
 
             self.get_chosen_result(choice, resA, resB, resC)
 
+
+
         #print("choices:", self.choices)
         self.calc_decision_blocks()
-        csv_name = str(sample_size) + '_' + str(random_choice_for_turns)
-        self.save_csv(csv_name)
+        if csv_name == "output_unknown.csv":
+            self.save_csv(csv_name, "unknown")
+        else:
+            self.save_csv(csv_name, "known")
+
+        self.choices = []
+        self.danger_button = 'X'
+        self.chance_to_chose_risky = 1
 
     def get_chosen_result(self, choice, resA, resB, resC):
         chosen_reward = -99999
@@ -180,17 +188,19 @@ class Task(object):
             self.c_block_percentage.append(num_of_C / block_size)
 
 
-    def save_csv(self, params_name ):
-        # id of the trial, self.percentage_sum
+    def save_csv(self, csv_name, unknown ):
         accuracy = 0
         if self.id < 45:
             accuracy = self.calc_accuracy_per_row()
         #print('accuracy:', accuracy)
-        df = pd.DataFrame([self.id] + self.a_block_percentage + self.b_block_percentage + self.c_block_percentage + [accuracy])
+        if unknown == "known":
+            df = pd.DataFrame([self.id] + self.a_block_percentage + self.b_block_percentage + self.c_block_percentage + [accuracy])
+        elif unknown == "unknown":
+            df = pd.DataFrame([self.id] + self.a_block_percentage + self.b_block_percentage)
         df = df.transpose()
         #print(df)
 
-        df.to_csv("output" + params_name + ".csv", mode ='a', index=False, header=False)
+        df.to_csv(csv_name, mode ='a', index=False, header=False)
         self.choices = []
         self.a_block_percentage = []
         self.b_block_percentage = []
@@ -204,7 +214,7 @@ class Task(object):
             result += (self.b_block_percentage[i] - self.actual_B[i])**2
 
             if self.num_buttons == 3:
-                result += (self.c_block_percentage[i] - self.actual_C[i])**2
+                result += (self.c_block_percentage[i] - self.actual_C[i]) ** 2
 
         if self.num_buttons == 3:
             result /= 15
@@ -217,7 +227,7 @@ Tasks = []
 
 for index, row in tasks.iterrows():
     current_task = Task()
-    current_task.load_task(row)
+    current_task.load_task(row, "known")
     Tasks.append(current_task)
 
 #num of clicks per task
@@ -225,29 +235,19 @@ T = 100
 
 def identify_rare_dis(choices, num_buttons):
     results_before_last = [(choices[index]['result_A'], choices[index]['result_B'], choices[index]['result_C']) for index in range(0, len(choices) - 1)]
-    meanA = np.mean([result[0] for result in results_before_last])
     stdA = statistics.stdev([result[0] for result in results_before_last])
-
-    meanB = np.mean([result[1] for result in results_before_last])
     stdB = statistics.stdev([result[1] for result in results_before_last])
 
-    meanC = 0
     stdC = 0
     if num_buttons == 3:
-        meanC = np.mean([result[2] for result in results_before_last])
         stdC = statistics.stdev([result[2] for result in results_before_last])
 
     results_with_last = [(choices[index]['result_A'], choices[index]['result_B'], choices[index]['result_C']) for index in range(0, len(choices))]
-    meanA_last = np.mean([result[0] for result in results_with_last])
     stdA_last = statistics.stdev([result[0] for result in results_with_last])
-
-    meanB_last = np.mean([result[1] for result in results_with_last])
     stdB_last = statistics.stdev([result[1] for result in results_with_last])
 
-    meanC_last = 0
     stdC_last = 0
     if num_buttons == 3:
-        meanC_last = np.mean([result[2] for result in results_with_last])
         stdC_last = statistics.stdev([result[2] for result in results_with_last])
 
     danger_button = 'X'
@@ -255,7 +255,6 @@ def identify_rare_dis(choices, num_buttons):
 
     chance_to_chose_riskyA, danger_buttonA = check_disaster(stdA, stdA_last, results_with_last, choices, 'A', 0)
     chance_to_chose_riskyB, danger_buttonB = check_disaster(stdB, stdB_last, results_with_last, choices, 'B', 1)
-
 
     if chance_to_chose_riskyA == chance_to_chose_riskyB == 1:
         danger_button = 'X'
@@ -279,7 +278,7 @@ def check_disaster(std_X, std_X_last, results_with_last_X, choices, danger_butto
 
     chance_to_chose_risky = 1
     danger_button = danger_button
-    if std_X < 3 and std_X_last > 3:
+    if std_X < 3 and std_X_last > 5:
 
         last_X = results_with_last_X[len(choices)-1][index]
         if last_X < 0 and (np.sum(np.array(results_with_last_X) == last_X) / len(results_with_last_X)) < 0.1:
@@ -287,13 +286,13 @@ def check_disaster(std_X, std_X_last, results_with_last_X, choices, danger_butto
             # was this option chosen by user?
             my_choice = choices[len(choices)-1]['choice']
             if my_choice == danger_button:
-                chance_to_chose_risky = 0.5
-            else:
                 chance_to_chose_risky = 0.7
+            else:
+                chance_to_chose_risky = 0.8
 
             # was extreme minimum value
             if std_X_last > 7:
-                chance_to_chose_risky *= 0.8
+                chance_to_chose_risky *= 0.9
 
     return chance_to_chose_risky, danger_button
 
@@ -345,7 +344,6 @@ def get_choice_for_buttons ( num_buttons, small_samples, sample_size, chance_to_
         if num_buttons == 3:
             small_sample_results['C'] += sample['result_C']
 
-
     small_sample_results['A'] /= sample_size
     small_sample_results['B'] /= sample_size
     if num_buttons == 3:
@@ -368,6 +366,7 @@ def get_choice_for_buttons ( num_buttons, small_samples, sample_size, chance_to_
 # Create empty pandas DataFrame add column names
 data = []
 df = pd.DataFrame(data, columns = ["a1", "a2", "a3", "a4", "a5", "b1", "b2", "b3", "b4", "b5", "c1", "c2", "c3", "c4", "c5", "Briars"])
+#df = pd.DataFrame(data, columns = ["a1", "a2", "a3", "a4", "a5", "b1", "b2", "b3", "b4", "b5", "Briars"])
 
 
 def calc_briers_avg(csv_name):
@@ -386,10 +385,8 @@ def find_params( tasks, list_of_sample_size, list_random_choice_for_turns ):
             csv_name = "output" + str(sample_size) + '_' + str(random_choice) + ".csv"
             df.to_csv(csv_name)
             for task in tasks:
-                task.run_task(choice_rule, sample_size, random_choice)
-                task.run_task(choice_rule, sample_size, random_choice)
-                task.run_task(choice_rule, sample_size, random_choice)
-                
+                task.run_task(choice_rule, sample_size, random_choice, csv_name)
+
             # compare each briars score and return the params for the minimum best
             briers_score_avg = calc_briers_avg(csv_name)
 
@@ -403,8 +400,6 @@ def find_params( tasks, list_of_sample_size, list_random_choice_for_turns ):
     return 0
 
 
-def find_random_choice_for_turns():
-    return 0
 
 # TODO
 #  refine decision rule based on worst accuracy,
@@ -413,9 +408,35 @@ def find_random_choice_for_turns():
 
 
 
-find_params(Tasks, range(4,6), range(2,7))
-#find_params(Tasks, range(3,7), range(3,9))
-#find_params(Tasks, range(3,7), range(3,9))
+find_params(Tasks, range(3,8), range(3,7))
+
+def calc_unknown( filename ):
+    # Create empty pandas DataFrame add column names
+    unknown_tasks = pd.read_csv(filename)
+    Tasks = []
+
+    for index, row in unknown_tasks.iterrows():
+        current_task = Task()
+        current_task.load_task(row, "unknown")
+        Tasks.append(current_task)
+
+    data = []
+    df = pd.DataFrame(data,
+                      columns=["a1", "a2", "a3", "a4", "a5", "b1", "b2", "b3", "b4", "b5"])
+    csv_name = "output_unknown.csv"
+    df.to_csv(csv_name)
+    for task in Tasks:
+        # sample_size = # random_choice
+        task.run_task(choice_rule, 5, 6, csv_name)
+        task.run_task(choice_rule, 5, 6, csv_name)
+        task.run_task(choice_rule, 5, 6, csv_name)
+        task.run_task(choice_rule, 5, 6, csv_name)
+        task.run_task(choice_rule, 5, 6, csv_name)
+
+
+#calc_unknown( "test_data.csv" )
+
+
 print("hello")
 
 
