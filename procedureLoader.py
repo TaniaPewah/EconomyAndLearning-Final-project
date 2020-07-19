@@ -305,6 +305,11 @@ def choice_rule( choices, num_buttons, sample_size, random_choice_for_turns, pre
         danger_button = prev_danger_button
         chance_to_chose_risky = prev_chance_to_chose_risky
 
+    if len(choices) % 10 == 0:
+        if num_buttons == 3:
+            return random.sample(['A','B','C'], 1)[0], prev_chance_to_chose_risky, prev_danger_button
+        return 'A' if random.random() < 0.5 else 'B', prev_chance_to_chose_risky, prev_danger_button
+
     # TODO should sample_size be bigger than the random_choice_for_turns?
     # should sample size stay the same for all rounds of choice?
     if len(choices) > sample_size:
@@ -375,7 +380,6 @@ def find_params( tasks, list_of_sample_size, list_random_choice_for_turns ):
                 task.run_task(choice_rule, sample_size, random_choice, csv_name)
                 task.run_task(choice_rule, sample_size, random_choice, csv_name)
                 task.run_task(choice_rule, sample_size, random_choice, csv_name)
-                task.run_task(choice_rule, sample_size, random_choice, csv_name)
 
             # compare each briars score and return the params for the minimum best
             briers_score_avg = calc_briers_avg(csv_name)
@@ -391,14 +395,7 @@ def find_params( tasks, list_of_sample_size, list_random_choice_for_turns ):
 
 
 
-# TODO
-#  refine decision rule based on worst accuracy,
-#  decide on two phenomena - small samples - underweighting of rare events, hot stove
-#  terrible disaster happends- hot stove effect
-
-
-
-find_params(Tasks, range(3,7), range(3,7))
+#find_params(Tasks, range(4,7), range(4,7))
 
 def calc_unknown( filename ):
     # Create empty pandas DataFrame add column names
@@ -424,8 +421,7 @@ def calc_unknown( filename ):
         task.run_task(choice_rule, 5, 6, csv_name)
 
 
-#calc_unknown( "test_data.csv" )
-
+calc_unknown( "test_data.csv" )
 
 print("hello")
 
